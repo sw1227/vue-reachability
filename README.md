@@ -1,4 +1,5 @@
 # vue-reachability
+Reachability map.
 
 ## Project setup
 ```
