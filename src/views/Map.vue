@@ -4,9 +4,12 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import mapboxgl, { MapboxOptions } from 'mapbox-gl'
+import mapboxgl, { MapboxOptions, Expression } from 'mapbox-gl'
 import { FeatureCollection } from 'geojson'
+import * as d3 from 'd3-color'
 import gsix60 from '../data/gsix60.json'
+import railData from '../data/N02-19_RailroadSection.json'
+import { railColor } from '../utils/color'
 
 const options: MapboxOptions = {
   accessToken: process.env.VUE_APP_MAPBOX_TOKEN,
@@ -30,6 +33,29 @@ export default Vue.extend({
         type: 'geojson',
         data: gsix60 as FeatureCollection
       })
+      map.addSource('rails', {
+        type: 'geojson',
+        data: railData as FeatureCollection
+      })
+      const railLayer: mapboxgl.LineLayer = {
+        id: 'rails',
+        type: 'line',
+        source: 'rails',
+        'layout': {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-width': 3,
+          'line-color': [
+            'match',
+            ['get', '路線名'],
+            // [name, color, name, color, ...]
+            ...Object.entries(railColor).map(e => [e[0], d3.rgb(...e[1]).formatHex()]).flat(),
+            '#969696' // fallback: default color
+          ] as Expression
+        }
+      }
       const stationLayer: mapboxgl.CircleLayer = {
         id: 'stations',
         type: 'circle',
@@ -39,6 +65,7 @@ export default Vue.extend({
           'circle-color': '#0ff'
         }
       }
+      map.addLayer(railLayer)
       map.addLayer(stationLayer)
     })
     this.map = map
