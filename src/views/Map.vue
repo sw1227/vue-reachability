@@ -6,10 +6,13 @@
 import Vue from 'vue'
 import mapboxgl, { MapboxOptions, Expression } from 'mapbox-gl'
 import { FeatureCollection } from 'geojson'
-import * as d3 from 'd3-color'
+import { rgb } from 'd3-color'
+import { schemeSpectral } from 'd3-scale-chromatic'
 import gsix60 from '../data/gsix60.json'
 import railData from '../data/N02-19_RailroadSection.json'
-import { railColor } from '../utils/color'
+import { railColor, createColorStops } from '../utils/color'
+
+const colorScheme = schemeSpectral
 
 const options: MapboxOptions = {
   accessToken: process.env.VUE_APP_MAPBOX_TOKEN,
@@ -51,7 +54,7 @@ export default Vue.extend({
             'match',
             ['get', '路線名'],
             // [name, color, name, color, ...]
-            ...Object.entries(railColor).map(e => [e[0], d3.rgb(...e[1]).formatHex()]).flat(),
+            ...Object.entries(railColor).map(e => [e[0], rgb(...e[1]).formatHex()]).flat(),
             '#969696' // fallback: default color
           ] as Expression
         }
@@ -62,11 +65,23 @@ export default Vue.extend({
         source: 'stations',
         paint: {
           'circle-radius': 6,
-          'circle-color': '#0ff'
+          'circle-color': [
+            'interpolate-hcl',
+            ['linear'],
+            ['get', 'time'],
+            ...createColorStops(colorScheme)
+          ] as Expression
         }
       }
       map.addLayer(railLayer)
       map.addLayer(stationLayer)
+      map.on('click', 'stations', (e: any) => {
+        const prop = e.features[0].properties
+        new mapboxgl.Popup()
+          .setLngLat(e.features[0].geometry.coordinates)
+          .setHTML(`<b>${prop.name || ''}駅</b><br />${prop.time}[min] / 乗換${prop.transit_count}回`)
+          .addTo(map)
+      })
     })
     this.map = map
   }

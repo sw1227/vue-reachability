@@ -53,3 +53,14 @@ export const railColor: ColorDict = {
   '小田原線': [34, 136, 204],
   '多摩線': [34, 136, 204]
 }
+
+export function createColorStops (scheme: ReadonlyArray<ReadonlyArray<string>>, maxMinutes = 60) {
+  const colorStops = scheme[scheme.length - 1]
+
+  const res: (string | number)[] = []
+  colorStops.forEach((hex, i) => {
+    res.push(maxMinutes * i / (colorStops.length - 1))
+    res.push(hex)
+  })
+  return res
+}
