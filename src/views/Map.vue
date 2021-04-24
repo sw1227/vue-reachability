@@ -1,16 +1,32 @@
 <template>
-  <div id="mapbox" />
+  <div>
+    <div id="mapbox" />
+    <el-card id="side-panel">
+      最大移動時間: {{ maxMinutes }} [min]
+      <el-slider
+        v-model="maxMinutes"
+        :min="5"
+        :max="60"
+        :step="5"
+      />
+      <el-divider />
+    </el-card>
+  </div>
 </template>
 
 <script lang="ts">
 import Vue from 'vue'
-import mapboxgl, { MapboxOptions, Expression } from 'mapbox-gl'
+import ElementUI from 'element-ui'
+import 'element-ui/lib/theme-chalk/index.css'
+import mapboxgl, { MapboxOptions, Expression, GeoJSONSource } from 'mapbox-gl'
 import { FeatureCollection } from 'geojson'
 import { rgb } from 'd3-color'
 import { schemeSpectral } from 'd3-scale-chromatic'
-import gsix60 from '../data/gsix60.json'
+import stationData from '../data/gsix60.json'
 import railData from '../data/N02-19_RailroadSection.json'
 import { railColor, createColorStops } from '../utils/color'
+
+Vue.use(ElementUI)
 
 const colorScheme = schemeSpectral
 
@@ -26,7 +42,19 @@ export default Vue.extend({
   name: 'reachability',
   data () {
     return {
-      map: undefined as (undefined | mapboxgl.Map)
+      map: undefined as (undefined | mapboxgl.Map),
+      maxMinutes: 60
+    }
+  },
+  watch: {
+    maxMinutes: function (minutes) {
+      // Filter stations and update map
+      const filteredStation: FeatureCollection = {
+        ...stationData,
+        features: stationData.features.filter(f => f.properties.time <= minutes)
+      }
+      const stationSource = this.map!.getSource('stations') as GeoJSONSource
+      stationSource.setData(filteredStation)
     }
   },
   mounted () {
@@ -34,7 +62,7 @@ export default Vue.extend({
     map.on('load', () => {
       map.addSource('stations', {
         type: 'geojson',
-        data: gsix60 as FeatureCollection
+        data: stationData as FeatureCollection
       })
       map.addSource('rails', {
         type: 'geojson',
@@ -71,6 +99,14 @@ export default Vue.extend({
             ['get', 'time'],
             ...createColorStops(colorScheme)
           ] as Expression
+          // 'circle-opacity': [
+          //   'case',
+          //   ['<', ['get', 'time'], this.maxMinutes],
+          //   1,
+          //   ['>=', ['get', 'time'], this.maxMinutes],
+          //   0,
+          //   0
+          // ]
         }
       }
       map.addLayer(railLayer)
@@ -92,5 +128,17 @@ export default Vue.extend({
 #mapbox {
   width: 100vw;
   height: 100vh;
+}
+
+#side-panel {
+  width: 300px;
+  height: calc(100vh - 20px);
+  z-index: 999;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  overflow: scroll;
+  padding: 0px;
+  background: #fafafa;
 }
 </style>
