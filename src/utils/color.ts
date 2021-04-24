@@ -1,3 +1,4 @@
+import { interpolateRgbBasis } from 'd3-interpolate'
 import {
   schemeSpectral,
   schemeRdYlBu,
@@ -81,4 +82,9 @@ export const colorSchemes: ColorSchemes = {
   Spectral: schemeSpectral,
   RdYlBu: schemeRdYlBu,
   RdYlGn: schemeRdYlGn
+}
+
+export function ramp (scheme: ColorScheme) {
+  const colors = scheme[scheme.length - 1]
+  return interpolateRgbBasis(colors as string[])
 }

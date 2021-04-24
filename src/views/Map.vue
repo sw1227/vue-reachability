@@ -18,6 +18,19 @@
           :value="item[1]">
         </el-option>
       </el-select>
+      <el-row id="color-row">
+        <el-col :span="2">0</el-col>
+        <el-col :span="22" :style="{ minHeight: '20px' }">
+          <span
+            v-for="n in maxMinutes"
+            :key="n"
+            class="color-box"
+            :style="{ background: interpolate(n) }"
+          />
+          <span id="max-minutes">{{ maxMinutes }}</span>
+        </el-col>
+      </el-row>
+      <el-divider />
     </el-card>
   </div>
 </template>
@@ -29,10 +42,9 @@ import 'element-ui/lib/theme-chalk/index.css'
 import mapboxgl, { MapboxOptions, Expression, GeoJSONSource } from 'mapbox-gl'
 import { FeatureCollection } from 'geojson'
 import { rgb } from 'd3-color'
-
 import stationData from '../data/gsix60.json'
 import railData from '../data/N02-19_RailroadSection.json'
-import { railColor, createColorStops, colorSchemes, ColorScheme } from '../utils/color'
+import { railColor, createColorStops, colorSchemes, ColorScheme, ramp } from '../utils/color'
 
 Vue.use(ElementUI)
 
@@ -66,6 +78,11 @@ export default Vue.extend({
     }
   },
   methods: {
+    interpolate: function (val: number) {
+      const color = ramp(this.colorScheme)
+      // return color(val / this.maxMinutes)
+      return color(val / 60)
+    },
     onChangeScheme: function (scheme: ColorScheme) {
       this.colorScheme = scheme
       const stationLayer = this.createStationLayer(this.colorScheme)
@@ -154,5 +171,20 @@ export default Vue.extend({
   overflow: scroll;
   padding: 0px;
   background: #fafafa;
+}
+
+#color-row {
+  margin-top: 20px;
+}
+
+.color-box {
+  width: 3px;
+  height: 20px;
+  float: left;
+}
+
+#max-minutes {
+  float: left;
+  margin-left: 10px;
 }
 </style>
