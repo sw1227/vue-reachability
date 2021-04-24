@@ -1,5 +1,17 @@
+import {
+  schemeSpectral,
+  schemeRdYlBu,
+  schemeRdYlGn
+} from 'd3-scale-chromatic'
+
 interface ColorDict {
   [name: string]: [number, number, number]
+}
+
+export type ColorScheme = (readonly (readonly string[])[])
+
+interface ColorSchemes {
+  [name: string]: ColorScheme
 }
 
 export const railColor: ColorDict = {
@@ -63,4 +75,10 @@ export function createColorStops (scheme: ReadonlyArray<ReadonlyArray<string>>, 
     res.push(hex)
   })
   return res
+}
+
+export const colorSchemes: ColorSchemes = {
+  Spectral: schemeSpectral,
+  RdYlBu: schemeRdYlBu,
+  RdYlGn: schemeRdYlGn
 }

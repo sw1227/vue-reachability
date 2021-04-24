@@ -10,6 +10,14 @@
         :step="5"
       />
       <el-divider />
+      <el-select :value="colorScheme" @change="onChangeScheme">
+        <el-option
+          v-for="(item, idx) in colorSchemes"
+          :key="idx"
+          :label="`Color scale: ${item[0]}`"
+          :value="item[1]">
+        </el-option>
+      </el-select>
     </el-card>
   </div>
 </template>
@@ -21,14 +29,12 @@ import 'element-ui/lib/theme-chalk/index.css'
 import mapboxgl, { MapboxOptions, Expression, GeoJSONSource } from 'mapbox-gl'
 import { FeatureCollection } from 'geojson'
 import { rgb } from 'd3-color'
-import { schemeSpectral } from 'd3-scale-chromatic'
+
 import stationData from '../data/gsix60.json'
 import railData from '../data/N02-19_RailroadSection.json'
-import { railColor, createColorStops } from '../utils/color'
+import { railColor, createColorStops, colorSchemes, ColorScheme } from '../utils/color'
 
 Vue.use(ElementUI)
-
-const colorScheme = schemeSpectral
 
 const options: MapboxOptions = {
   accessToken: process.env.VUE_APP_MAPBOX_TOKEN,
@@ -43,18 +49,47 @@ export default Vue.extend({
   data () {
     return {
       map: undefined as (undefined | mapboxgl.Map),
-      maxMinutes: 60
+      maxMinutes: 60,
+      colorScheme: colorSchemes.Spectral,
+      colorSchemes: Object.entries(colorSchemes)
     }
   },
   watch: {
     maxMinutes: function (minutes) {
       // Filter stations and update map
-      const filteredStation: FeatureCollection = {
+      const filteredStation = {
         ...stationData,
         features: stationData.features.filter(f => f.properties.time <= minutes)
-      }
+      } as FeatureCollection
       const stationSource = this.map!.getSource('stations') as GeoJSONSource
       stationSource.setData(filteredStation)
+    }
+  },
+  methods: {
+    onChangeScheme: function (scheme: ColorScheme) {
+      this.colorScheme = scheme
+      const stationLayer = this.createStationLayer(this.colorScheme)
+      if (this.map && this.map.getLayer('stations')) {
+        this.map!.removeLayer('stations')
+        this.map!.addLayer(stationLayer)
+      }
+    },
+    createStationLayer: function (scheme: ColorScheme) {
+      const stationLayer: mapboxgl.CircleLayer = {
+        id: 'stations',
+        type: 'circle',
+        source: 'stations',
+        paint: {
+          'circle-radius': 6,
+          'circle-color': [
+            'interpolate-hcl',
+            ['linear'],
+            ['get', 'time'],
+            ...createColorStops(scheme)
+          ] as Expression
+        }
+      }
+      return stationLayer
     }
   },
   mounted () {
@@ -87,28 +122,7 @@ export default Vue.extend({
           ] as Expression
         }
       }
-      const stationLayer: mapboxgl.CircleLayer = {
-        id: 'stations',
-        type: 'circle',
-        source: 'stations',
-        paint: {
-          'circle-radius': 6,
-          'circle-color': [
-            'interpolate-hcl',
-            ['linear'],
-            ['get', 'time'],
-            ...createColorStops(colorScheme)
-          ] as Expression
-          // 'circle-opacity': [
-          //   'case',
-          //   ['<', ['get', 'time'], this.maxMinutes],
-          //   1,
-          //   ['>=', ['get', 'time'], this.maxMinutes],
-          //   0,
-          //   0
-          // ]
-        }
-      }
+      const stationLayer = this.createStationLayer(this.colorScheme)
       map.addLayer(railLayer)
       map.addLayer(stationLayer)
       map.on('click', 'stations', (e: any) => {
