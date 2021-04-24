@@ -18,7 +18,7 @@
           :value="item[1]">
         </el-option>
       </el-select>
-      <el-row id="color-row">
+      <el-row class="margin-top-20">
         <el-col :span="2">0</el-col>
         <el-col :span="22" :style="{ minHeight: '20px' }">
           <span
@@ -28,6 +28,14 @@
             :style="{ background: interpolate(n) }"
           />
           <span id="max-minutes">{{ maxMinutes }}</span>
+        </el-col>
+      </el-row>
+      <el-row class="margin-top-20">
+        <el-col :span="16">
+          Adaptive color scale:
+        </el-col>
+        <el-col :span="8">
+          <el-switch v-model="adaptive" />
         </el-col>
       </el-row>
       <el-divider />
@@ -63,7 +71,13 @@ export default Vue.extend({
       map: undefined as (undefined | mapboxgl.Map),
       maxMinutes: 60,
       colorScheme: colorSchemes.Spectral,
-      colorSchemes: Object.entries(colorSchemes)
+      colorSchemes: Object.entries(colorSchemes),
+      adaptive: true
+    }
+  },
+  computed: {
+    minuteNormalizer: function (): number {
+      return this.adaptive ? this.maxMinutes : 60
     }
   },
   watch: {
@@ -75,23 +89,28 @@ export default Vue.extend({
       } as FeatureCollection
       const stationSource = this.map!.getSource('stations') as GeoJSONSource
       stationSource.setData(filteredStation)
+      this.renderStationLayer(this.map)
+    },
+    adaptive: function (_adaptive) {
+      this.renderStationLayer(this.map)
+    },
+    colorScheme: function (_scheme) {
+      this.renderStationLayer(this.map)
     }
   },
   methods: {
     interpolate: function (val: number) {
       const color = ramp(this.colorScheme)
-      // return color(val / this.maxMinutes)
-      return color(val / 60)
+      return color(val / this.minuteNormalizer)
     },
     onChangeScheme: function (scheme: ColorScheme) {
       this.colorScheme = scheme
-      const stationLayer = this.createStationLayer(this.colorScheme)
-      if (this.map && this.map.getLayer('stations')) {
-        this.map!.removeLayer('stations')
-        this.map!.addLayer(stationLayer)
-      }
     },
-    createStationLayer: function (scheme: ColorScheme) {
+    renderStationLayer: function (map: (undefined | mapboxgl.Map)) {
+      if (!map) return
+      if (map.getLayer('stations')) {
+        map.removeLayer('stations')
+      }
       const stationLayer: mapboxgl.CircleLayer = {
         id: 'stations',
         type: 'circle',
@@ -102,11 +121,11 @@ export default Vue.extend({
             'interpolate-hcl',
             ['linear'],
             ['get', 'time'],
-            ...createColorStops(scheme)
+            ...createColorStops(this.colorScheme, this.minuteNormalizer)
           ] as Expression
         }
       }
-      return stationLayer
+      map.addLayer(stationLayer)
     }
   },
   mounted () {
@@ -139,9 +158,8 @@ export default Vue.extend({
           ] as Expression
         }
       }
-      const stationLayer = this.createStationLayer(this.colorScheme)
       map.addLayer(railLayer)
-      map.addLayer(stationLayer)
+      this.renderStationLayer(map)
       map.on('click', 'stations', (e: any) => {
         const prop = e.features[0].properties
         new mapboxgl.Popup()
@@ -173,7 +191,7 @@ export default Vue.extend({
   background: #fafafa;
 }
 
-#color-row {
+.margin-top-20 {
   margin-top: 20px;
 }
 
