@@ -39,6 +39,14 @@
         </el-col>
       </el-row>
       <el-divider />
+      乗換: {{ maxTransit > 0 ? `${maxTransit}回以下` : 'なし' }}
+      <el-slider
+        v-model="maxTransit"
+        :min="0"
+        :max="1"
+        :step="1"
+      />
+      <el-divider />
     </el-card>
   </div>
 </template>
@@ -72,7 +80,8 @@ export default Vue.extend({
       maxMinutes: 60,
       colorScheme: colorSchemes.Spectral,
       colorSchemes: Object.entries(colorSchemes),
-      adaptive: true
+      adaptive: true,
+      maxTransit: 1
     }
   },
   computed: {
@@ -82,14 +91,18 @@ export default Vue.extend({
   },
   watch: {
     maxMinutes: function (minutes) {
-      // Filter stations and update map
       const filteredStation = {
         ...stationData,
         features: stationData.features.filter(f => f.properties.time <= minutes)
-      } as FeatureCollection
-      const stationSource = this.map!.getSource('stations') as GeoJSONSource
-      stationSource.setData(filteredStation)
-      this.renderStationLayer(this.map)
+      }
+      this.updateStationData(filteredStation as FeatureCollection)
+    },
+    maxTransit: function (transitCount) {
+      const filteredStation = {
+        ...stationData,
+        features: stationData.features.filter(f => f.properties.transit_count <= transitCount)
+      }
+      this.updateStationData(filteredStation as FeatureCollection)
     },
     adaptive: function (_adaptive) {
       this.renderStationLayer(this.map)
@@ -105,6 +118,11 @@ export default Vue.extend({
     },
     onChangeScheme: function (scheme: ColorScheme) {
       this.colorScheme = scheme
+    },
+    updateStationData: function (stationData: FeatureCollection) {
+      const stationSource = this.map!.getSource('stations') as GeoJSONSource
+      stationSource.setData(stationData)
+      this.renderStationLayer(this.map)
     },
     renderStationLayer: function (map: (undefined | mapboxgl.Map)) {
       if (!map) return
