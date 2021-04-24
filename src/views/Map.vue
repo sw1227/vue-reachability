@@ -47,6 +47,14 @@
         :step="1"
       />
       <el-divider />
+      レイヤー表示設定<br />
+      <el-row type="flex">
+        <el-checkbox v-model="showRails">路線</el-checkbox>
+      </el-row>
+      <el-row type="flex">
+        <el-checkbox v-model="showStations">駅</el-checkbox>
+      </el-row>
+      <el-divider />
     </el-card>
   </div>
 </template>
@@ -81,7 +89,9 @@ export default Vue.extend({
       colorScheme: colorSchemes.Spectral,
       colorSchemes: Object.entries(colorSchemes),
       adaptive: true,
-      maxTransit: 1
+      maxTransit: 1,
+      showRails: true,
+      showStations: true
     }
   },
   computed: {
@@ -109,6 +119,14 @@ export default Vue.extend({
     },
     colorScheme: function (_scheme) {
       this.renderStationLayer(this.map)
+    },
+    showRails: function (show) {
+      if (!this.map) return
+      this.map.setLayoutProperty('rails', 'visibility', show ? 'visible' : 'none')
+    },
+    showStations: function (show) {
+      if (!this.map) return
+      this.map.setLayoutProperty('stations', 'visibility', show ? 'visible' : 'none')
     }
   },
   methods: {
@@ -133,6 +151,9 @@ export default Vue.extend({
         id: 'stations',
         type: 'circle',
         source: 'stations',
+        layout: {
+          'visibility': this.showRails ? 'visible' : 'none'
+        },
         paint: {
           'circle-radius': 6,
           'circle-color': [
@@ -161,7 +182,8 @@ export default Vue.extend({
         id: 'rails',
         type: 'line',
         source: 'rails',
-        'layout': {
+        layout: {
+          'visibility': this.showRails ? 'visible' : 'none',
           'line-join': 'round',
           'line-cap': 'round'
         },
