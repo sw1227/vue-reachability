@@ -68,6 +68,7 @@ import { FeatureCollection } from 'geojson'
 import { rgb } from 'd3-color'
 import stationData from '../data/gsix60.json'
 import railData from '../data/N02-19_RailroadSection.json'
+import isochroneData from '../data/union_isochrones.json'
 import { railColor, createColorStops, colorSchemes, ColorScheme, ramp } from '../utils/color'
 
 Vue.use(ElementUI)
@@ -200,6 +201,27 @@ export default Vue.extend({
       }
       map.addLayer(railLayer)
       this.renderStationLayer(map)
+      map.addSource('isochrone', {
+        type: 'geojson',
+        data: isochroneData as FeatureCollection
+      })
+      const isochroneLayer: mapboxgl.LineLayer = {
+        id: 'isochrone',
+        type: 'line',
+        source: 'isochrone',
+        layout: {},
+        paint: {
+          'line-width': 3,
+          'line-color': [
+            'interpolate-hcl',
+            ['linear'],
+            ['get', 'minutes'],
+            ...createColorStops(this.colorScheme, this.minuteNormalizer)
+          ] as Expression
+        },
+        filter: ['<', ['get', 'minutes'], this.maxMinutes] as Expression
+      }
+      map.addLayer(isochroneLayer)
       map.on('click', 'stations', (e: any) => {
         const prop = e.features[0].properties
         new mapboxgl.Popup()
