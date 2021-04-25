@@ -54,6 +54,9 @@
       <el-row type="flex">
         <el-checkbox v-model="showStations">駅</el-checkbox>
       </el-row>
+      <el-row type="flex">
+        <el-checkbox v-model="showIsochrones">等時間線</el-checkbox>
+      </el-row>
       <el-divider />
     </el-card>
   </div>
@@ -68,7 +71,7 @@ import { FeatureCollection } from 'geojson'
 import { rgb } from 'd3-color'
 import stationData from '../data/gsix60.json'
 import railData from '../data/N02-19_RailroadSection.json'
-import isochroneData from '../data/union_isochrones.json'
+import isochroneData from '../data/union_isochrones.json' // TODO: 乗り換え回数考慮してない
 import { railColor, createColorStops, colorSchemes, ColorScheme, ramp } from '../utils/color'
 
 Vue.use(ElementUI)
@@ -92,7 +95,8 @@ export default Vue.extend({
       adaptive: true,
       maxTransit: 1,
       showRails: true,
-      showStations: true
+      showStations: true,
+      showIsochrones: true
     }
   },
   computed: {
@@ -107,6 +111,7 @@ export default Vue.extend({
         features: stationData.features.filter(f => f.properties.time <= minutes)
       }
       this.updateStationData(filteredStation as FeatureCollection)
+      this.renderIsochroneLayer(this.map)
     },
     maxTransit: function (transitCount) {
       const filteredStation = {
@@ -117,9 +122,11 @@ export default Vue.extend({
     },
     adaptive: function (_adaptive) {
       this.renderStationLayer(this.map)
+      this.renderIsochroneLayer(this.map)
     },
     colorScheme: function (_scheme) {
       this.renderStationLayer(this.map)
+      this.renderIsochroneLayer(this.map)
     },
     showRails: function (show) {
       if (!this.map) return
@@ -128,6 +135,10 @@ export default Vue.extend({
     showStations: function (show) {
       if (!this.map) return
       this.map.setLayoutProperty('stations', 'visibility', (show ? 'visible' : 'none'))
+    },
+    showIsochrones: function (show) {
+      if (!this.map) return
+      this.map.setLayoutProperty('isochrones', 'visibility', (show ? 'visible' : 'none'))
     }
   },
   methods: {
@@ -166,6 +177,29 @@ export default Vue.extend({
         }
       }
       map.addLayer(stationLayer)
+    },
+    renderIsochroneLayer: function (map: (undefined | mapboxgl.Map)) {
+      if (!map) return
+      if (map.getLayer('isochrones')) {
+        map.removeLayer('isochrones')
+      }
+      const isochroneLayer: mapboxgl.LineLayer = {
+        id: 'isochrones',
+        type: 'line',
+        source: 'isochrones',
+        layout: {},
+        paint: {
+          'line-width': 3,
+          'line-color': [
+            'interpolate-hcl',
+            ['linear'],
+            ['get', 'minutes'],
+            ...createColorStops(this.colorScheme, this.minuteNormalizer)
+          ] as Expression
+        },
+        filter: ['<=', ['get', 'minutes'], this.maxMinutes] as Expression
+      }
+      map.addLayer(isochroneLayer)
     }
   },
   mounted () {
@@ -174,6 +208,10 @@ export default Vue.extend({
       map.addSource('stations', {
         type: 'geojson',
         data: stationData as FeatureCollection
+      })
+      map.addSource('isochrones', {
+        type: 'geojson',
+        data: isochroneData as FeatureCollection
       })
       map.addSource('rails', {
         type: 'geojson',
@@ -201,27 +239,7 @@ export default Vue.extend({
       }
       map.addLayer(railLayer)
       this.renderStationLayer(map)
-      map.addSource('isochrone', {
-        type: 'geojson',
-        data: isochroneData as FeatureCollection
-      })
-      const isochroneLayer: mapboxgl.LineLayer = {
-        id: 'isochrone',
-        type: 'line',
-        source: 'isochrone',
-        layout: {},
-        paint: {
-          'line-width': 3,
-          'line-color': [
-            'interpolate-hcl',
-            ['linear'],
-            ['get', 'minutes'],
-            ...createColorStops(this.colorScheme, this.minuteNormalizer)
-          ] as Expression
-        },
-        filter: ['<', ['get', 'minutes'], this.maxMinutes] as Expression
-      }
-      map.addLayer(isochroneLayer)
+      this.renderIsochroneLayer(map)
       map.on('click', 'stations', (e: any) => {
         const prop = e.features[0].properties
         new mapboxgl.Popup()
