@@ -1,6 +1,10 @@
 # vue-reachability
 Reachability map.
 
+https://sw1227.github.io/vue-reachability/#/map
+
+![isochrone](./img/isochrone.jpg)
+
 ## Project setup
 ```
 npm install
