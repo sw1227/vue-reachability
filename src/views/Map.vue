@@ -58,6 +58,15 @@
         <el-checkbox v-model="showIsochrones">等時間線</el-checkbox>
       </el-row>
       <el-divider />
+      <el-select :value="mapStyle" @change="onChangeMapStyle">
+        <el-option
+          v-for="(item, idx) in mapStyles"
+          :key="idx"
+          :label="`Map style: ${item[0]}`"
+          :value="item[1]">
+        </el-option>
+      </el-select>
+      <el-divider />
     </el-card>
   </div>
 </template>
@@ -73,6 +82,7 @@ import stationData from '../data/gsix60.json'
 import railData from '../data/N02-19_RailroadSection.json'
 import isochroneData from '../data/union_isochrones.json' // TODO: 乗り換え回数考慮してない
 import { railColor, createColorStops, colorSchemes, ColorScheme, ramp } from '../utils/color'
+import { mapStyles } from '../utils/constants'
 
 Vue.use(ElementUI)
 
@@ -92,6 +102,8 @@ export default Vue.extend({
       maxMinutes: 60,
       colorScheme: colorSchemes.Spectral,
       colorSchemes: Object.entries(colorSchemes),
+      mapStyle: mapStyles.Light,
+      mapStyles: Object.entries(mapStyles),
       adaptive: true,
       maxTransit: 1,
       showRails: true,
@@ -149,6 +161,12 @@ export default Vue.extend({
     onChangeScheme: function (scheme: ColorScheme) {
       this.colorScheme = scheme
     },
+    onChangeMapStyle: function (style: string) {
+      this.mapStyle = style
+      if (this.map) {
+        this.map.setStyle(style)
+      }
+    },
     updateStationData: function (stationData: FeatureCollection) {
       const stationSource = this.map!.getSource('stations') as GeoJSONSource
       stationSource.setData(stationData)
@@ -200,11 +218,8 @@ export default Vue.extend({
         filter: ['<=', ['get', 'minutes'], this.maxMinutes] as Expression
       }
       map.addLayer(isochroneLayer)
-    }
-  },
-  mounted () {
-    const map = new mapboxgl.Map(options)
-    map.on('load', () => {
+    },
+    render: function (map: mapboxgl.Map) {
       map.addSource('stations', {
         type: 'geojson',
         data: stationData as FeatureCollection
@@ -247,6 +262,12 @@ export default Vue.extend({
           .setHTML(`<b>${prop.name || ''}駅</b><br />${prop.time}[min] / 乗換${prop.transit_count}回`)
           .addTo(map)
       })
+    }
+  },
+  mounted () {
+    const map = new mapboxgl.Map(options)
+    map.on('style.load', () => {
+      this.render(map)
     })
     this.map = map
   }
