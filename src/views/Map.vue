@@ -122,11 +122,11 @@ export default Vue.extend({
     },
     showRails: function (show) {
       if (!this.map) return
-      this.map.setLayoutProperty('rails', 'visibility', show ? 'visible' : 'none')
+      this.map.setLayoutProperty('rails', 'visibility', (show ? 'visible' : 'none'))
     },
     showStations: function (show) {
       if (!this.map) return
-      this.map.setLayoutProperty('stations', 'visibility', show ? 'visible' : 'none')
+      this.map.setLayoutProperty('stations', 'visibility', (show ? 'visible' : 'none'))
     }
   },
   methods: {
@@ -152,7 +152,7 @@ export default Vue.extend({
         type: 'circle',
         source: 'stations',
         layout: {
-          'visibility': this.showRails ? 'visible' : 'none'
+          'visibility': (this.showStations ? 'visible' : 'none')
         },
         paint: {
           'circle-radius': 6,
@@ -183,7 +183,7 @@ export default Vue.extend({
         type: 'line',
         source: 'rails',
         layout: {
-          'visibility': this.showRails ? 'visible' : 'none',
+          'visibility': (this.showRails ? 'visible' : 'none'),
           'line-join': 'round',
           'line-cap': 'round'
         },
