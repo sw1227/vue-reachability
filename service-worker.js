@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/3.6.3/workbox-sw.js");
 
 importScripts(
-  "/vue-reachability/precache-manifest.5f2222855d99f1faf378367025dd8ee0.js"
+  "/vue-reachability/precache-manifest.3bc774246a6452c4f979e3c9844bc768.js"
 );
 
 workbox.core.setCacheNameDetails({prefix: "vue-reachability"});
