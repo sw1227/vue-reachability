@@ -25,7 +25,6 @@ jobs:
         run: npm run build
         env:
           CI: ""
-          VUE_APP_MAPBOX_TOKEN: ${{secrets.VUE_APP_MAPBOX_TOKEN}}
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

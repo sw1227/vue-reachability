@@ -77,7 +77,7 @@ import { railColor, createColorStops, colorSchemes, ColorScheme, ramp } from '..
 Vue.use(ElementUI)
 
 const options: MapboxOptions = {
-  accessToken: process.env.VUE_APP_MAPBOX_TOKEN,
+  accessToken: 'pk.eyJ1Ijoic3cxMjI3IiwiYSI6ImNrbngyazRhcjBtY3Iyd3RnODhjbDhscWsifQ.6Uc-Lboqa0WhZbnnFJWFSA', // only for public and URL restricted
   container: 'mapbox',
   style: 'mapbox://styles/mapbox/light-v10',
   center: [139.7, 35.7],
